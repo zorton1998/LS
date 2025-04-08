@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Post Analyzer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <button class="theme-toggle">
+            <span class="sun-icon">☀️</span>
+            <span class="moon-icon">🌙</span>
+        </button>
+    </header>
+
+    <main>
+        <section class="analyze-section">
+            <h1>LinkedIn Post Analyzer</h1>
+            <form id="analyzeForm">
+                <div class="input-group">
+                    <input type="url" 
+                           id="postUrl" 
+                           placeholder="Enter LinkedIn post URL" 
+                           required>
+                    <button type="submit">Analyze</button>
+                </div>
+            </form>
+        </section>
+
+        <section id="resultsSection" style="display: none;">
+            <div id="loadingSpinner" style="display: none;">
+                <div class="spinner"></div>
+                <p>Analyzing post...</p>
+            </div>
+
+            <div id="errorMessage" style="display: none;">
+                <p id="errorText"></p>
+            </div>
+
+            <div id="personasContainer"></div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html> 
