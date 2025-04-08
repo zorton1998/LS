@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const config = require('../config');
 
+console.log('Initializing LinkedIn automation service');
 puppeteer.use(StealthPlugin());
 
 class LinkedInAutomation {
@@ -9,85 +10,121 @@ class LinkedInAutomation {
         this.browser = null;
         this.page = null;
         this.isAuthenticated = false;
+        console.log('LinkedIn automation service constructed');
     }
 
     async initialize() {
-        if (this.browser) return;
+        console.log('Initializing browser...');
+        if (this.browser) {
+            console.log('Browser already initialized');
+            return;
+        }
 
-        this.browser = await puppeteer.launch({
-            headless: 'new',
-            args: [
-                '--disable-blink-features=AutomationControlled',
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-notifications'
-            ],
-            defaultViewport: { width: 1280, height: 800 }
-        });
+        try {
+            console.log('Launching browser...');
+            this.browser = await puppeteer.launch({
+                headless: 'new',
+                args: [
+                    '--disable-blink-features=AutomationControlled',
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-notifications'
+                ],
+                defaultViewport: { width: 1280, height: 800 }
+            });
+            console.log('Browser launched successfully');
 
-        this.page = await this.browser.newPage();
-        await this.setupStealthMode();
+            this.page = await this.browser.newPage();
+            console.log('New page created');
+            
+            await this.setupStealthMode();
+            console.log('Stealth mode configured');
+        } catch (error) {
+            console.error('Failed to initialize browser:', error);
+            throw error;
+        }
     }
 
     async setupStealthMode() {
-        // Mask automation
-        await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
-        
-        await this.page.evaluateOnNewDocument(() => {
-            delete navigator.__proto__.webdriver;
-            window.navigator.chrome = { runtime: {} };
-            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-        });
+        console.log('Setting up stealth mode...');
+        try {
+            await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
+            
+            await this.page.evaluateOnNewDocument(() => {
+                delete navigator.__proto__.webdriver;
+                window.navigator.chrome = { runtime: {} };
+                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+            });
+            console.log('Stealth mode setup completed');
+        } catch (error) {
+            console.error('Failed to setup stealth mode:', error);
+            throw error;
+        }
     }
 
     async login() {
-        if (this.isAuthenticated) return;
+        if (this.isAuthenticated) {
+            console.log('Already authenticated');
+            return;
+        }
 
+        console.log('Starting LinkedIn login process...');
         try {
+            console.log('Navigating to LinkedIn login page...');
             await this.page.goto('https://www.linkedin.com/login', { waitUntil: 'networkidle0' });
             
-            // Add random delays between actions
-            await this.randomDelay();
+            console.log('Entering email...');
             await this.page.type('#username', config.linkedin.credentials.email, { delay: 100 });
             
-            await this.randomDelay();
+            console.log('Entering password...');
             await this.page.type('#password', config.linkedin.credentials.password, { delay: 100 });
             
-            await this.randomDelay();
+            console.log('Clicking submit button...');
             await this.page.click('button[type="submit"]');
             
-            // Wait for navigation and possible security checks
+            console.log('Waiting for navigation...');
             await this.page.waitForNavigation({ waitUntil: 'networkidle0' });
             
             // Check for security verification
-            if (await this.page.$('.security-verification-container')) {
+            const hasVerification = await this.page.$('.security-verification-container');
+            if (hasVerification) {
+                console.error('Security verification required');
                 throw new Error('Security verification required. Please login manually first.');
             }
 
             this.isAuthenticated = true;
+            console.log('Login successful');
             await this.randomDelay(config.linkedin.automation.delays.navigation);
 
         } catch (error) {
             console.error('Login failed:', error);
-            throw new Error('Failed to login to LinkedIn');
+            throw error;
         }
     }
 
     async analyzePost(postUrl) {
+        console.log('Starting post analysis for URL:', postUrl);
         try {
             await this.initialize();
+            console.log('Browser initialized');
+
             await this.login();
+            console.log('Logged in successfully');
 
-            // Navigate to post
+            console.log('Navigating to post URL...');
             await this.page.goto(postUrl, { waitUntil: 'networkidle0' });
-            await this.randomDelay();
+            console.log('Waiting for post content to load...');
+            await this.page.waitForSelector('.feed-shared-update-v2', { timeout: 10000 });
 
-            // Extract post data
+            console.log('Extracting post data...');
             const postData = await this.extractPostData();
+            console.log('Post data extracted:', postData);
+
             await this.randomDelay();
 
-            // Get interactors
+            console.log('Extracting interactors...');
             const interactors = await this.extractInteractors();
+            console.log('Interactors extracted:', interactors);
 
             return {
                 post: postData,
@@ -182,15 +219,19 @@ class LinkedInAutomation {
 
     async randomDelay(baseDelay = config.linkedin.automation.delays.base) {
         const randomDelay = Math.floor(Math.random() * config.linkedin.automation.delays.random);
-        await new Promise(resolve => setTimeout(resolve, baseDelay + randomDelay));
+        const totalDelay = baseDelay + randomDelay;
+        console.log(`Waiting for ${totalDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, totalDelay));
     }
 
     async cleanup() {
+        console.log('Starting cleanup...');
         if (this.browser) {
             await this.browser.close();
             this.browser = null;
             this.page = null;
             this.isAuthenticated = false;
+            console.log('Cleanup completed');
         }
     }
 }

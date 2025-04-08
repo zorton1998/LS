@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-module.exports = {
+const config = {
     linkedin: {
         credentials: {
             email: process.env.LINKEDIN_EMAIL,
@@ -34,4 +34,18 @@ module.exports = {
         port: parseInt(process.env.PORT) || 3000,
         environment: process.env.NODE_ENV || 'development'
     }
-}; 
+};
+
+// Verify credentials are loaded
+console.log('Config loaded:', {
+    ...config,
+    linkedin: {
+        ...config.linkedin,
+        credentials: {
+            email: config.linkedin.credentials.email ? '✓ Set' : '✗ Missing',
+            password: config.linkedin.credentials.password ? '✓ Set' : '✗ Missing'
+        }
+    }
+});
+
+module.exports = config; 
